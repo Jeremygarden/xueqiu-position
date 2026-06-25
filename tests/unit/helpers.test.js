@@ -263,3 +263,41 @@ describe('isMarketOpen', () => {
     expect(typeof isMarketOpen()).toBe('boolean')
   })
 })
+
+// ── Round 6: additional formatPrice edge cases + market open boundaries ──────
+
+describe('formatPrice additional cases', () => {
+  it('rounds up correctly', () => {
+    expect(formatPrice(1.005)).toBe('1.01')
+  })
+
+  it('handles very large numbers', () => {
+    expect(formatPrice(9999999.99)).toBe('9,999,999.99')
+  })
+
+  it('parses numeric strings', () => {
+    // Number('1234.5') = 1234.5 → valid
+    expect(formatPrice('1234.5')).toBe('1,234.50')
+  })
+})
+
+describe('isMarketOpen boundary cases', () => {
+  function utc(isoStr) { return new Date(isoStr) }
+
+  it('is open at exact 9:30 CST (01:30 UTC on weekday)', () => {
+    // 2026-06-23 Tuesday 09:30 CST = 01:30 UTC
+    expect(isMarketOpen(utc('2026-06-23T01:30:00Z'))).toBe(true)
+  })
+
+  it('is closed at 11:30 CST (03:30 UTC) — strict close boundary', () => {
+    expect(isMarketOpen(utc('2026-06-23T03:30:00Z'))).toBe(false)
+  })
+
+  it('is open at 13:00 CST sharp (05:00 UTC)', () => {
+    expect(isMarketOpen(utc('2026-06-23T05:00:00Z'))).toBe(true)
+  })
+
+  it('is closed at 15:00 CST (07:00 UTC) — strict close boundary', () => {
+    expect(isMarketOpen(utc('2026-06-23T07:00:00Z'))).toBe(false)
+  })
+})
