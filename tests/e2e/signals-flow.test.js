@@ -258,3 +258,59 @@ describe('BB status consistency', () => {
     expect(prices[prices.length - 1]).toBeLessThan(b.lower)
   })
 })
+
+// ── Round 8 additions: multi-position signal scenarios ───────────────────────
+
+describe('多持仓信号场景', () => {
+  it('refreshSignals works independently for each position', async () => {
+    // stable+spike triggers RSI overbought + BB above → score ≤ -1
+    const stable = Array.from({ length: 39 }, (_, i) => 100 + (i % 3 === 0 ? 0.5 : -0.5))
+    const closesA = [...stable, 115]   // 上突: score negative (sell)
+    const closesB = [...stable, 85]    // 下突: score positive (buy)
+
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 100 })
+    await store.addPosition({ symbol: 'HK00700', shares: 100, costPrice: 200 })
+
+    fetchKline
+      .mockResolvedValueOnce({ timestamps: [], closes: closesA, volumes: [] })
+      .mockResolvedValueOnce({ timestamps: [], closes: closesB, volumes: [] })
+
+    const sigA = await store.refreshSignals('SH600519')
+    const sigB = await store.refreshSignals('HK00700')
+
+    // Spike-up (sell) vs spike-down (buy) must differ
+    expect(sigA.score).not.toBe(sigB.score)
+    expect(sigA.label.type).toBe('sell')
+    expect(sigB.label.type).toBe('buy')
+  })
+
+  it('refreshSignals for non-existent position symbol returns null', async () => {
+    const store = usePortfolioStore()
+    // symbol not in positions
+    const sig = await store.refreshSignals('PHANTOM999')
+    expect(sig).toBeNull()
+  })
+
+  it('signals object shape is complete on every call', async () => {
+    fetchKline.mockResolvedValue({
+      timestamps: [],
+      closes: Array.from({ length: 40 }, (_, i) => 100 + i * 0.5),
+      volumes: []
+    })
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 100 })
+    const signals = await store.refreshSignals('SH600519')
+
+    expect(signals).toHaveProperty('macd.macd')
+    expect(signals).toHaveProperty('macd.trend')
+    expect(signals).toHaveProperty('rsi.value')
+    expect(signals).toHaveProperty('rsi.status')
+    expect(signals).toHaveProperty('bb.upper')
+    expect(signals).toHaveProperty('bb.bandwidth')
+    expect(typeof signals.score).toBe('number')
+    expect(typeof signals.label.text).toBe('string')
+    expect(typeof signals.label.color).toBe('string')
+    expect(['buy', 'sell', 'neutral']).toContain(signals.label.type)
+  })
+})
