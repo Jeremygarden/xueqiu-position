@@ -1,7 +1,7 @@
 /**
- * vitest.config.js — keep the unit-test runner isolated from the uni-app
- * Vite plugin. The uni plugin tries to traverse pages.json / manifest.json
- * at startup and isn't safe to load just for unit tests.
+ * vitest.config.js — isolated from the uni-app Vite plugin.
+ * Covers both src/**​/*.test.js (existing utils suites) and
+ * tests/**​/*.test.js (new unit / integration / e2e suites).
  */
 import { defineConfig } from 'vitest/config'
 import { fileURLToPath, URL } from 'node:url'
@@ -14,7 +14,17 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.{js,ts}'],
-    globals: false
+    globals: true,
+    setupFiles: ['./tests/mocks/uni.mock.js'],
+    include: [
+      'src/**/*.test.{js,ts}',
+      'tests/**/*.test.{js,ts}'
+    ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['src/**/*.{js,ts}'],
+      exclude: ['src/**/*.test.{js,ts}', 'src/main.js', 'src/App.vue']
+    }
   }
 })
