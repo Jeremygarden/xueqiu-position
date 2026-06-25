@@ -385,3 +385,30 @@ describe('todayProfit calculation', () => {
     expect(store.todayProfit).toBeLessThan(0)
   })
 })
+
+// ── Round 11: updatePosition via store action + sortBy = profitRate ────────────
+
+describe('store.updatePosition', () => {
+  it('patches costPrice without touching other fields', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400, notes: 'hold' })
+    store.updatePosition('SH600519', { costPrice: 1350 })
+    const pos = store.positions.find(p => p.symbol === 'SH600519')
+    expect(pos.costPrice).toBe(1350)
+    expect(pos.notes).toBe('hold')    // unchanged
+    expect(pos.shares).toBe(10)        // unchanged
+  })
+
+  it('recalculates profit after updatePosition', async () => {
+    fetchBatchQuote.mockResolvedValue([
+      { symbol: 'SH600519', current: 1500, percent: 0, lastClose: 1500 }
+    ])
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    await store.refreshPrices()
+    const profitBefore = store.positions[0].profit
+    store.updatePosition('SH600519', { costPrice: 1600 })
+    // At price 1500 with new costPrice 1600 → profit should be negative
+    expect(store.positions[0].profit).not.toBe(profitBefore)
+  })
+})
