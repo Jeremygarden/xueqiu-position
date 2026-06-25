@@ -93,8 +93,10 @@ export function isMarketOpen(date = new Date()) {
   const day = shanghai.getUTCDay() // 0=Sun, 6=Sat
   if (day === 0 || day === 6) return false
   const t = shanghai.getUTCHours() * 60 + shanghai.getUTCMinutes()
-  const morn = t >= 9 * 60 + 30 && t <= 11 * 60 + 30
-  const aft = t >= 13 * 60 && t <= 15 * 60
+  // 09:30 ≤ t < 11:30  (close at exactly 11:30; inclusive start)
+  // 13:00 ≤ t < 15:00  (close at exactly 15:00)
+  const morn = t >= 9 * 60 + 30 && t < 11 * 60 + 30
+  const aft = t >= 13 * 60 && t < 15 * 60
   return morn || aft
 }
 

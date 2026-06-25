@@ -20,6 +20,12 @@ const TREND_UP_40 = Array.from({ length: 40 }, (_, i) => 10 + i * 0.8)
 const TREND_DOWN_40 = Array.from({ length: 40 }, (_, i) => 60 - i * 0.8)
 const FLAT_40 = Array.from({ length: 40 }, () => 100)
 
+// Bollinger-band breakout fixtures: 39 near-stable bars then a sharp spike/dip
+// Ensures last price crosses the ±2σ band.
+const BB_STABLE_BASE = Array.from({ length: 39 }, (_, i) => 100 + (i % 3 === 0 ? 0.5 : -0.5))
+const BB_BREAKOUT_ABOVE = [...BB_STABLE_BASE, 115]   // spike → status='above'
+const BB_BREAKOUT_BELOW = [...BB_STABLE_BASE, 85]    // dip   → status='below'
+
 // ─────────────────────────────────────────────────────────────────────────────
 describe('calculateEMA', () => {
   it('returns array of same length as input', () => {
@@ -208,12 +214,12 @@ describe('calculateBollingerBands', () => {
   })
 
   it('uptrend ending → status = above', () => {
-    const b = calculateBollingerBands(TREND_UP_40)
+    const b = calculateBollingerBands(BB_BREAKOUT_ABOVE)
     expect(b.status).toBe('above')
   })
 
   it('downtrend ending → status = below', () => {
-    const b = calculateBollingerBands(TREND_DOWN_40)
+    const b = calculateBollingerBands(BB_BREAKOUT_BELOW)
     expect(b.status).toBe('below')
   })
 

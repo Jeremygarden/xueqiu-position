@@ -102,6 +102,8 @@ export const usePortfolioStore = defineStore('portfolio', () => {
         return merged
       })
       lastRefresh.value = Date.now()
+    } catch (err) {
+      console.warn('[portfolio] refreshPrices failed:', err && err.message)
     } finally {
       loading.value = false
     }
