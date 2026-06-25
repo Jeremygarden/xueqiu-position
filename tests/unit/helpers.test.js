@@ -303,3 +303,43 @@ describe('isMarketOpen boundary cases', () => {
     expect(isMarketOpen(utc('2026-06-23T07:00:00Z'))).toBe(false)
   })
 })
+
+// ── Round 14: line 71 coverage + formatProfit zero precision ────────────────
+
+describe('getMarketFromSymbol — 6-digit fallback to 基金', () => {
+  it('6-digit starting with 2 → 基金 (catch-all fallback)', () => {
+    // Codes starting with 2 are not mainstream but covered by the fallback
+    expect(getMarketFromSymbol('200001')).toBe('基金')
+  })
+
+  it('6-digit starting with 7 → 基金 (catch-all fallback)', () => {
+    expect(getMarketFromSymbol('700001')).toBe('基金')
+  })
+
+  it('6-digit starting with 9 → 基金 (catch-all fallback)', () => {
+    expect(getMarketFromSymbol('900001')).toBe('基金')
+  })
+})
+
+describe('formatProfit precision', () => {
+  it('rounds to 2 decimal places', () => {
+    expect(formatProfit(100.999).text).toBe('+101.00')
+    expect(formatProfit(-0.001).text).toBe('-0.00')
+  })
+
+  it('handles very large profit', () => {
+    const r = formatProfit(1234567.89)
+    expect(r.cls).toBe('text-up')
+    expect(r.text).toContain('1,234,567')  // formatProfit uses thousands separator
+  })
+})
+
+describe('formatPercent edge cases', () => {
+  it('very small positive rounds to +0.00%', () => {
+    expect(formatPercent(0.001)).toBe('+0.00%')
+  })
+
+  it('string number input works', () => {
+    expect(formatPercent('3.14')).toBe('+3.14%')
+  })
+})
