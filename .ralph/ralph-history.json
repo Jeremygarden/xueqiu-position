@@ -1,0 +1,29 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "startedAt": "2026-06-25T02:39:15.975Z",
+      "endedAt": "2026-06-25T02:39:19.891Z",
+      "durationMs": 3903,
+      "agent": "opencode",
+      "model": "github-copilot/claude-opus-4.7",
+      "toolsUsed": {},
+      "filesModified": [
+        ".ralph/"
+      ],
+      "exitCode": 1,
+      "completionDetected": false,
+      "errors": [
+        "\u001b[91m\u001b[1mError: \u001b[0m{"
+      ]
+    }
+  ],
+  "totalDurationMs": 3903,
+  "struggleIndicators": {
+    "repeatedErrors": {
+      "\u001b[91m\u001b[1mError: \u001b[0m{": 1
+    },
+    "noProgressIterations": 0,
+    "shortIterations": 1
+  }
+}

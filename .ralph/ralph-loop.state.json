@@ -1,0 +1,13 @@
+{
+  "active": true,
+  "iteration": 1,
+  "minIterations": 1,
+  "maxIterations": 20,
+  "completionPromise": "STATUS: COMPLETE",
+  "tasksMode": false,
+  "taskPromise": "READY_FOR_NEXT_TASK",
+  "prompt": "# 雪球持仓监控微信小程序 — Ralph Building Loop\n\n## 目标\n构建一个完整的微信小程序（uni-app 技术栈），用于监控雪球持仓，支持股票和基金，提供技术分析信号、社区精选、丰富持仓数据展示。\n\n## 技术栈\n- **框架**: uni-app（Vue 3 + Vite）\n- **UI**: uView-Plus 组件库\n- **状态管理**: Pinia\n- **图表**: uCharts（uni-app 生态适配小程序)\n- **数据来源**: 雪球非官方 API（xq_a_token Cookie 认证）\n\n## 功能要求\n\n### 1. 持仓管理\n- 用户可手动添加/删除持仓标的（股票 + 基金）\n- 持仓输入字段：证券代码、名称、持仓数量、成本价、买入日期\n- 本地存储持仓数据（uni-app storage）\n- 支持设置雪球 xq_a_token（Settings 页面）\n\n### 2. 持仓数据展示（Rich Data）\n- 当前价格、涨跌幅（实时刷新）\n- 持仓成本、现值、盈亏金额、收益率（%）\n- 持仓总览卡片：总资产、总收益、今日盈亏\n- 分类视角（支持切换）：\n  - 按类型（股票/基金）\n  - 按市场（A股/港股/美股）\n  - 按板块（从证券信息提取）\n  - 按收益排序（盈亏榜）\n\n### 3. 雪球社区精选信息\n- 每个标的详情页展示最新雪球帖子摘要（调用雪球 timeline API）\n- 显示：帖子标题、作者、点赞数、发布时间\n- 可点击查看原帖（webview）\n\n### 4. 技术分析买卖信号\n- 对每只标的计算并展示：\n  - **MACD**（12/26/9）：金叉死叉信号\n  - **RSI**（14日）：超买（>70）超卖（<30）信号\n  - **布林带**（20日，2σ）：价格突破上轨/下轨信号\n- 综合信号评分（-2 到 +2，偏买/偏卖/中性）\n- 在持仓列表和详情页展示信号标签（绿买/红卖/灰中性）\n\n### 5. 页面结构\n```\npages/\n  index/        — 持仓总览（资产卡片 + 持仓列表）\n  detail/       — 标的详情（走势图 + 社区 + 技术信号）\n  add/          — 添加持仓\n  settings/     — 设置 xq_a_token\ntabBar: 持仓 / 市场 / 设置\n```\n\n## 代码规范\n- 每个功能模块拆分到 `composables/` 或 `utils/`\n- API 调用统一封装在 `api/` 目录，带错误处理和 loading 状态\n- 技术指标计算放在 `utils/indicators.js`（纯函数，可测试）\n- 组件放 `components/`\n- 样式：统一 SCSS 变量，深色/浅色主题友好\n\n## Git 规范（每轮必须）\n- 每个 iteration 必须 `git add -A && git commit -m \"feat/fix: 描述\" && git push origin main`\n- commit message 要描述本轮做了什么\n- 远程 repo: https://github.com/Jeremygarden/xueqiu-position\n\n## 完成标准\n所有以下条件满足时输出 `STATUS: COMPLETE`：\n1. uni-app 项目可以 `npm install` 无报错\n2. 持仓增删改查功能完整\n3. 技术指标（MACD/RSI/布林带）计算逻辑正确（有注释）\n4. 雪球 API 封装完整（行情、基金净值、社区帖子）\n5. 所有页面有完整 UI 实现\n6. IMPLEMENTATION_PLAN.md 任务全部标记 done\n7. README.md 包含项目说明和使用方法\n\n## 当前状态\n项目是空仓库，从零开始构建。\n\n## 每轮工作模式\n1. 查看 IMPLEMENTATION_PLAN.md 确认下一个任务\n2. 实现该任务的完整代码\n3. 运行必要的检验（`node -e \"require('./src/utils/indicators.js')\"` 等）\n4. 更新 IMPLEMENTATION_PLAN.md 标记完成\n5. `git add -A && git commit -m \"...\" && git push origin main`\n6. 如所有任务完成，输出 `STATUS: COMPLETE`\n",
+  "startedAt": "2026-06-25T02:39:15.950Z",
+  "model": "github-copilot/claude-opus-4.7",
+  "agent": "opencode"
+}
