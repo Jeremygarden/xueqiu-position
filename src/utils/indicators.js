@@ -65,8 +65,8 @@ export function calculateMACD(prices, fast = 12, slow = 26, signal = 9) {
   if (p.length === 0) {
     return { macd: 0, signal: 0, histogram: 0, trend: 'neutral', crossover: null }
   }
-  // 不足以同时计算 fast/slow/signal 的窗口时，给中性回退（避免 EMA 早期数据噪声）
-  if (p.length < slow + signal) {
+  // 不足以计算 slow EMA 的窗口时，直接中性回退
+  if (p.length < slow) {
     return { macd: 0, signal: 0, histogram: 0, trend: 'neutral', crossover: null }
   }
   const emaFast = _ema(p, fast)
@@ -80,6 +80,11 @@ export function calculateMACD(prices, fast = 12, slow = 26, signal = 9) {
   const macd = difArr[last] || 0
   const sig = deaArr[last] || 0
   const histogram = histArr[last] || 0
+
+  // signal 线需要 slow + signal 才稳定；在那之前给 macd 值但不报穿越/趋势
+  if (p.length < slow + signal) {
+    return { macd, signal: sig, histogram, trend: 'neutral', crossover: null }
+  }
 
   let crossover = null
   if (prev >= 0) {

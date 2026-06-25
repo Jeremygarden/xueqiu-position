@@ -53,9 +53,19 @@ describe('calculateMACD', () => {
     expect([null, 'golden', 'death']).toContain(m.crossover)
   })
 
-  it('uses neutral safely when prices are too short', () => {
+  it('uses neutral safely when prices are too short for slow EMA', () => {
     const m = calculateMACD([1, 2, 3])
     expect(m.trend).toBe('neutral')
+    expect(m.crossover).toBe(null)
+    expect(m.macd).toBe(0)
+  })
+
+  it('returns computed macd but neutral trend in slow<=N<slow+signal range', () => {
+    // 30 prices: enough for slow=26 EMA but not slow+signal=35
+    const prices = Array.from({ length: 30 }, (_, i) => 10 + i)
+    const m = calculateMACD(prices)
+    expect(typeof m.macd).toBe('number')
+    expect(m.trend).toBe('neutral')   // signal line still maturing
     expect(m.crossover).toBe(null)
   })
 })
