@@ -213,3 +213,34 @@ describe('getToken / setToken', () => {
     expect(getToken()).toBe('')
   })
 })
+
+// ── Round 5 additions: persistence across multiple operations ────────────────
+
+describe('multi-operation persistence', () => {
+  it('add → update → remove → empty', () => {
+    addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    updatePosition('SH600519', { shares: 20 })
+    expect(getPositions()[0].shares).toBe(20)
+    removePosition('SH600519')
+    expect(getPositions()).toHaveLength(0)
+  })
+
+  it('order is preserved when adding multiple distinct positions', () => {
+    const syms = ['SH600519', 'HK00700', 'AAPL']
+    for (const symbol of syms) addPosition({ symbol, shares: 1 })
+    const list = getPositions()
+    expect(list.map(p => p.symbol)).toEqual(syms)
+  })
+
+  it('updatePosition on non-existent symbol does not create entry', () => {
+    updatePosition('GHOST', { shares: 999 })
+    expect(getPositions()).toHaveLength(0)
+  })
+
+  it('savePositions with deeply nested objects survives JSON round-trip', () => {
+    const list = [{ symbol: 'SH600519', meta: { tags: ['a', 'b'] }, shares: 5 }]
+    savePositions(list)
+    const loaded = getPositions()
+    expect(loaded[0].meta.tags).toEqual(['a', 'b'])
+  })
+})
