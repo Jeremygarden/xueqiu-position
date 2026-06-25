@@ -27,11 +27,51 @@ function _chunk(arr, size) {
   return chunks
 }
 
+/**
+ * Classify a Xueqiu symbol into 'stock' | 'fund' | 'etf'.
+ *
+ * Rules:
+ *   F000001          → fund    (open-end fund, Danjuan prefix)
+ *   SH5xxxxx         → etf     (上交所 ETF / LOF 区段)
+ *   SH588xxx         → etf     (科创板 ETF)
+ *   SZ15xxxx/16xxxx  → etf     (深交所 ETF / LOF 区段)
+ *   bare 6-digit:
+ *     5xxxxx         → etf     (沪市 ETF, e.g. 510300)
+ *     15xxxx/16xxxx  → etf     (深市 ETF / LOF)
+ *     6xxxxx         → stock   (沪市主板)
+ *     0xxxxx/3xxxxx  → stock   (深市主板 / 创业板)
+ *     8xxxxx/4xxxxx  → stock   (北交所)
+ *     others         → fund    (开放式基金 fallback)
+ *   SH/SZ/BJ/HK + digits → stock
+ *   ASCII letters    → stock   (美股)
+ *   anything else    → stock
+ */
 function _toType(symbol) {
   const s = _normalizeSymbol(symbol)
-  if (/^F\d{6}$/.test(s) || /^\d{6}$/.test(s)) return 'fund'
-  // ETF heuristics: A 股 ETF 代码 5xx/15x/16x
-  if (/^SH5\d{5}$/.test(s) || /^SZ1[56]\d{4}$/.test(s)) return 'etf'
+  if (!s) return 'stock'
+
+  // 1. Open-end fund (Danjuan F-prefixed canonical)
+  if (/^F\d{6}$/.test(s)) return 'fund'
+
+  // 2. Xueqiu-prefixed ETF / LOF
+  if (/^SH5\d{5}$/.test(s) || /^SH588\d{3}$/.test(s)) return 'etf'
+  if (/^SZ1[56]\d{4}$/.test(s)) return 'etf'
+
+  // 3. Bare 6-digit codes — disambiguate by leading digit
+  if (/^\d{6}$/.test(s)) {
+    const head = s[0]
+    const head2 = s.slice(0, 2)
+    if (head === '5' || head2 === '15' || head2 === '16') return 'etf'
+    if (head === '6' || head === '0' || head === '3' || head === '8' || head === '4') return 'stock'
+    return 'fund' // 1xxxxx / 2xxxxx / 7xxxxx / 9xxxxx — open-end fund
+  }
+
+  // 4. Prefixed stocks (A股 / 港股)
+  if (/^(SH|SZ|BJ|HK)\d+$/.test(s)) return 'stock'
+
+  // 5. US tickers (1-5 ASCII letters, optional .CLASS suffix)
+  if (/^[A-Z]{1,5}(\.[A-Z]+)?$/.test(s)) return 'stock'
+
   return 'stock'
 }
 
@@ -168,14 +208,34 @@ export async function fetchKline(symbol, period = 'day', count = 120) {
 // ---------- fund nav ------------------------------------------------------
 /**
  * Fund detail (uses Danjuan endpoint).
+ *
+ * Only accepts open-end fund codes:
+ *   - 'F000001'   (Xueqiu canonical)
+ *   - '000001'    (6 raw digits, treated as fund only when leading digit is not
+ *                  a stock/ETF marker — i.e. NOT 6/0/3/8/4/5, NOT 15/16 prefix)
+ * For prefixed stocks (SH/SZ/HK/BJ) or US tickers we return null without
+ * hitting the network, since Danjuan would reject them anyway.
+ *
  * @returns {Promise<{nav:number, navDate:string, accNav:number, growthRate:number, unitNav:number}|null>}
  */
 export async function fetchFundNav(symbol) {
-  const s = _normalizeSymbol(symbol).replace(/^F/, '') // 蛋卷 API 不带 F 前缀
-  if (!s) return null
+  const raw = _normalizeSymbol(symbol)
+  if (!raw) return null
+
+  // Reject anything that's clearly not an open-end fund.
+  // Accept: F\d{6}  or  bare 6 digits whose _toType resolves to 'fund'.
+  let code = ''
+  if (/^F\d{6}$/.test(raw)) {
+    code = raw.slice(1)
+  } else if (/^\d{6}$/.test(raw) && _toType(raw) === 'fund') {
+    code = raw
+  } else {
+    return null
+  }
+
   try {
     const data = await request({
-      url: `/djapi/fund/detail/${s}`,
+      url: `/djapi/fund/detail/${code}`,
       baseUrl: ENDPOINTS.FUND
     })
     const fd = (data && (data.fund_detail || data.fund_derived || data)) || null
