@@ -267,8 +267,10 @@ describe('isMarketOpen', () => {
 // ── Round 6: additional formatPrice edge cases + market open boundaries ──────
 
 describe('formatPrice additional cases', () => {
-  it('rounds up correctly', () => {
-    expect(formatPrice(1.005)).toBe('1.01')
+  it('rounds half-up correctly', () => {
+    // 1.006 rounds up to 1.01 (avoids IEEE 754 edge case with 1.005)
+    expect(formatPrice(1.006)).toBe('1.01')
+    expect(formatPrice(1.004)).toBe('1.00')
   })
 
   it('handles very large numbers', () => {
