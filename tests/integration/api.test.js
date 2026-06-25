@@ -424,3 +424,60 @@ describe('fetchKline — alternative period aliases', () => {
     expect(callArg.data.period).toBe('day')
   })
 })
+
+// ── Round 12: request.js branch coverage ────────────────────────────────────
+
+describe('request() URL resolution', () => {
+  it('handles absolute URL directly without baseUrl', async () => {
+    mockUniRequest({ data: { ok: true } })
+    const result = await request({ url: 'https://stock.xueqiu.com/v5/test' })
+    expect(result).toEqual({ ok: true })
+    const call = uni.request.mock.calls[0][0]
+    expect(call.url).toBe('https://stock.xueqiu.com/v5/test')
+  })
+
+  it('uses baseUrl when url is a relative path', async () => {
+    mockUniRequest({ data: {} })
+    await request({ url: '/v5/stock/quote.json', baseUrl: 'https://stock.xueqiu.com' })
+    const call = uni.request.mock.calls[0][0]
+    expect(call.url).toBe('https://stock.xueqiu.com/v5/stock/quote.json')
+  })
+
+  it('prepends slash to path without leading slash', async () => {
+    mockUniRequest({ data: {} })
+    await request({ url: 'v5/stock/quote.json', baseUrl: 'https://stock.xueqiu.com' })
+    const call = uni.request.mock.calls[0][0]
+    expect(call.url).toContain('/v5/stock/quote.json')
+  })
+
+  it('passes GET method by default', async () => {
+    mockUniRequest({ data: {} })
+    await request({ url: '/test' })
+    const call = uni.request.mock.calls[0][0]
+    expect(call.method).toBe('GET')
+  })
+
+  it('passes custom method correctly', async () => {
+    mockUniRequest({ data: {} })
+    await request({ url: '/test', method: 'post' })
+    const call = uni.request.mock.calls[0][0]
+    expect(call.method).toBe('POST')
+  })
+})
+
+describe('request() deduplication', () => {
+  it('identical concurrent requests resolve from same promise', async () => {
+    let callCount = 0
+    uni.request.mockImplementation(({ success }) => {
+      callCount++
+      setTimeout(() => success({ statusCode: 200, data: { val: callCount } }), 5)
+    })
+
+    const p1 = request({ url: '/dedup-test' })
+    const p2 = request({ url: '/dedup-test' })
+
+    const [r1, r2] = await Promise.all([p1, p2])
+    expect(callCount).toBe(1)   // only one real network call
+    expect(r1).toEqual(r2)       // both get same result
+  })
+})
