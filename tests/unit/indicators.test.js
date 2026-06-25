@@ -317,3 +317,44 @@ describe('getSignalLabel', () => {
     expect(l.type).toBe('neutral')
   })
 })
+
+// ── Round 4 additions: EMA precision + MACD golden-cross scenario ──────────────
+
+describe('calculateEMA precision', () => {
+  it('3-period EMA on known sequence matches manual calc', () => {
+    // k = 2/(3+1) = 0.5
+    // prices: 10, 12, 11, 13, 15
+    // EMA[0] = 10
+    // EMA[1] = 12*0.5 + 10*0.5 = 11
+    // EMA[2] = 11*0.5 + 11*0.5 = 11
+    // EMA[3] = 13*0.5 + 11*0.5 = 12
+    // EMA[4] = 15*0.5 + 12*0.5 = 13.5
+    const ema = calculateEMA([10, 12, 11, 13, 15], 3)
+    expect(ema[0]).toBe(10)
+    expect(ema[1]).toBeCloseTo(11, 5)
+    expect(ema[2]).toBeCloseTo(11, 5)
+    expect(ema[3]).toBeCloseTo(12, 5)
+    expect(ema[4]).toBeCloseTo(13.5, 5)
+  })
+
+  it('period-1 EMA equals input', () => {
+    const prices = [5, 10, 15, 20]
+    expect(calculateEMA(prices, 1)).toEqual(prices)
+  })
+})
+
+describe('calculateMACD with enough data for crossover detection', () => {
+  it('histogram > 0 implies bullish trend', () => {
+    const prices = Array.from({ length: 40 }, (_, i) => 100 + i)
+    const { trend, histogram } = calculateMACD(prices)
+    expect(trend).toBe('bullish')
+    expect(histogram).toBeGreaterThan(0)
+  })
+
+  it('histogram < 0 implies bearish trend', () => {
+    const prices = Array.from({ length: 40 }, (_, i) => 200 - i)
+    const { trend, histogram } = calculateMACD(prices)
+    expect(trend).toBe('bearish')
+    expect(histogram).toBeLessThan(0)
+  })
+})
