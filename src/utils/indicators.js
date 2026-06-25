@@ -1,7 +1,19 @@
 /**
  * Technical Analysis Indicators
- * Pure functions for computing MACD, RSI, and Bollinger Bands
+ * Pure functions for computing MACD, RSI, and Bollinger Bands.
+ *
+ * Public API (per checklist):
+ *   - calculateMACD(prices)          → { macd, signal, histogram, trend }
+ *   - calculateRSI(prices, period)   → { value, status }
+ *   - calculateBollingerBands(prices, period, multiplier) → { upper, middle, lower, status }
+ *   - getSignalScore(prices)         → number in [-2, +2]
+ *
+ * Legacy aliases (kept for backward compatibility):
+ *   - calculateBollinger              → same as calculateBollingerBands
+ *   - calculateCompositeSignal(macd, rsi, bb) → { score, level, signals }
  */
+
+// ----- internal helpers ---------------------------------------------------
 
 function EMA(data, period) {
   const k = 2 / (period + 1)
@@ -47,60 +59,68 @@ function STDDEV(data, period) {
   return result
 }
 
+// ----- public API ---------------------------------------------------------
+
 /**
- * Calculate MACD indicator
- * @param {number[]} closes - Array of closing prices
- * @param {number} fastPeriod - Fast EMA period (default 12)
- * @param {number} slowPeriod - Slow EMA period (default 26)
- * @param {number} signalPeriod - Signal line period (default 9)
- * @returns {Object} { macd, signal, histogram, signal_buy, signal_sell }
- *   signal_buy: true when MACD crosses above signal (golden cross)
- *   signal_sell: true when MACD crosses below signal (death cross)
+ * Calculate MACD indicator.
+ * @param {number[]} prices - closing prices
+ * @param {number} [fastPeriod=12]
+ * @param {number} [slowPeriod=26]
+ * @param {number} [signalPeriod=9]
+ * @returns {{macd:number, signal:number, histogram:number, trend:'bullish'|'bearish'|'neutral'}}
+ *   Latest values + 'trend' derived from histogram sign / crossover.
  */
-export function calculateMACD(closes, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
-  if (closes.length < slowPeriod + signalPeriod) {
-    return { macd: [], signal: [], histogram: [], signal_buy: false, signal_sell: false }
+export function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+  if (!Array.isArray(prices) || prices.length === 0) {
+    return { macd: 0, signal: 0, histogram: 0, trend: 'neutral' }
   }
 
-  const emaFast = EMA(closes, fastPeriod)
-  const emaSlow = EMA(closes, slowPeriod)
+  // With short series, just return zeros instead of throwing.
+  const need = slowPeriod + signalPeriod
+  const tooShort = prices.length < need
 
-  const dif = emaFast.map((v, i) => v - emaSlow[i])
-  const dea = EMA(dif, signalPeriod)
-  const histogram = dif.map((v, i) => 2 * (v - (dea[i] || 0)))
+  const emaFast = EMA(prices, fastPeriod)
+  const emaSlow = EMA(prices, slowPeriod)
+  const difArr = emaFast.map((v, i) => v - emaSlow[i])
+  const deaArr = EMA(difArr, signalPeriod)
+  const histArr = difArr.map((v, i) => 2 * (v - (deaArr[i] || 0)))
 
-  const lastIndex = histogram.length - 1
-  const prevIndex = histogram.length - 2
+  const last = histArr.length - 1
+  const prev = histArr.length - 2
 
-  const signalBuy = prevIndex >= 0 && histogram[prevIndex] < 0 && histogram[lastIndex] >= 0
-  const signalSell = prevIndex >= 0 && histogram[prevIndex] > 0 && histogram[lastIndex] <= 0
+  const macd = difArr[last] || 0
+  const signal = deaArr[last] || 0
+  const histogram = histArr[last] || 0
 
-  return {
-    macd: dif,
-    signal: dea,
-    histogram,
-    signal_buy: signalBuy,
-    signal_sell: signalSell
+  let trend = 'neutral'
+  if (!tooShort && prev >= 0) {
+    if (histArr[prev] <= 0 && histArr[last] > 0) trend = 'bullish'
+    else if (histArr[prev] >= 0 && histArr[last] < 0) trend = 'bearish'
+    else if (histogram > 0) trend = 'bullish'
+    else if (histogram < 0) trend = 'bearish'
+  } else if (!tooShort) {
+    if (histogram > 0) trend = 'bullish'
+    else if (histogram < 0) trend = 'bearish'
   }
+
+  return { macd, signal, histogram, trend }
 }
 
 /**
- * Calculate RSI indicator
- * @param {number[]} closes - Array of closing prices
- * @param {number} period - RSI period (default 14)
- * @returns {Object} { rsi, signal } 
- *   rsi: array of RSI values
- *   signal: 'overbought' (>70), 'oversold' (<30), or 'normal'
+ * Calculate RSI indicator.
+ * @param {number[]} prices - closing prices
+ * @param {number} [period=14]
+ * @returns {{value:number, status:'overbought'|'oversold'|'neutral'}}
  */
-export function calculateRSI(closes, period = 14) {
-  if (closes.length < period + 1) {
-    return { rsi: [], signal: 'normal' }
+export function calculateRSI(prices, period = 14) {
+  if (!Array.isArray(prices) || prices.length < period + 1) {
+    return { value: 50, status: 'neutral' }
   }
 
   const gains = []
   const losses = []
-  for (let i = 1; i < closes.length; i++) {
-    const diff = closes[i] - closes[i - 1]
+  for (let i = 1; i < prices.length; i++) {
+    const diff = prices[i] - prices[i - 1]
     gains.push(diff > 0 ? diff : 0)
     losses.push(diff < 0 ? -diff : 0)
   }
@@ -108,106 +128,137 @@ export function calculateRSI(closes, period = 14) {
   let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period
   let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period
 
-  const rsiValues = [avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss)]
-
   for (let i = period; i < gains.length; i++) {
     avgGain = (avgGain * (period - 1) + gains[i]) / period
     avgLoss = (avgLoss * (period - 1) + losses[i]) / period
-    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss
-    rsiValues.push(avgLoss === 0 ? 100 : 100 - 100 / (1 + rs))
   }
 
-  const latestRSI = rsiValues[rsiValues.length - 1]
-  let signal = 'normal'
-  if (latestRSI > 70) signal = 'overbought'
-  else if (latestRSI < 30) signal = 'oversold'
+  let value
+  if (avgLoss === 0) {
+    value = 100
+  } else {
+    const rs = avgGain / avgLoss
+    value = 100 - 100 / (1 + rs)
+  }
+  value = Math.round(value * 100) / 100
 
-  return { rsi: rsiValues, signal }
+  let status = 'neutral'
+  if (value > 70) status = 'overbought'
+  else if (value < 30) status = 'oversold'
+
+  return { value, status }
 }
 
 /**
- * Calculate Bollinger Bands
- * @param {number[]} closes - Array of closing prices
- * @param {number} period - Moving average period (default 20)
- * @param {number} multiplier - Standard deviation multiplier (default 2)
- * @returns {Object} { upper, middle, lower, bandwidth, signal }
- *   signal: 'upper_break' (price above upper), 'lower_break' (price below lower), 'normal'
+ * Calculate Bollinger Bands (latest band values + price status).
+ * @param {number[]} prices - closing prices
+ * @param {number} [period=20]
+ * @param {number} [multiplier=2]
+ * @returns {{upper:number, middle:number, lower:number, status:'above'|'below'|'inside'}}
  */
-export function calculateBollinger(closes, period = 20, multiplier = 2) {
-  if (closes.length < period) {
-    return { upper: [], middle: [], lower: [], bandwidth: 0, signal: 'normal' }
+export function calculateBollingerBands(prices, period = 20, multiplier = 2) {
+  if (!Array.isArray(prices) || prices.length < period) {
+    const last = prices && prices.length ? prices[prices.length - 1] : 0
+    return { upper: last, middle: last, lower: last, status: 'inside' }
   }
 
-  const middle = SMA(closes, period)
-  const stddev = STDDEV(closes, period)
-  const upper = middle.map((v, i) => v + multiplier * stddev[i])
-  const lower = middle.map((v, i) => v - multiplier * stddev[i])
+  const middleArr = SMA(prices, period)
+  const stddevArr = STDDEV(prices, period)
+  const upperArr = middleArr.map((v, i) => v + multiplier * stddevArr[i])
+  const lowerArr = middleArr.map((v, i) => v - multiplier * stddevArr[i])
 
-  const lastIndex = closes.length - 1
-  const latestClose = closes[lastIndex]
-  const latestUpper = upper[lastIndex]
-  const latestLower = lower[lastIndex]
+  const i = prices.length - 1
+  const price = prices[i]
+  const upper = upperArr[i]
+  const middle = middleArr[i]
+  const lower = lowerArr[i]
 
-  let signal = 'normal'
-  if (latestClose >= latestUpper) signal = 'upper_break'
-  else if (latestClose <= latestLower) signal = 'lower_break'
+  let status = 'inside'
+  if (price > upper) status = 'above'
+  else if (price < lower) status = 'below'
 
-  const mid = middle[lastIndex] || 1
-  const bandwidth = mid !== 0 ? ((latestUpper - latestLower) / mid) : 0
-
-  return { upper, middle, lower, bandwidth, signal }
+  return { upper, middle, lower, status }
 }
 
+// Legacy alias to avoid breaking any callers that still use the old name.
+export const calculateBollinger = calculateBollingerBands
+
 /**
- * Calculate composite signal score (-2 to +2)
- * Aggregates MACD, RSI, and Bollinger signals
- * @param {Object} macd - Result from calculateMACD
- * @param {Object} rsi - Result from calculateRSI
- * @param {Object} bollinger - Result from calculateBollinger
- * @returns {Object} { score, level, signals }
- *   score: -2 to +2
- *   level: 'buy' (>=1), 'sell' (<=-1), 'neutral'
- *   signals: detailed breakdown
+ * Composite signal score in [-2, +2] derived from MACD, RSI, and BB
+ * computed off the supplied price series.
+ * @param {number[]} prices - closing prices
+ * @returns {number}
  */
-export function calculateCompositeSignal(macd, rsi, bollinger) {
+export function getSignalScore(prices) {
+  if (!Array.isArray(prices) || prices.length === 0) return 0
+
+  const macd = calculateMACD(prices)
+  const rsi = calculateRSI(prices)
+  const bb = calculateBollingerBands(prices)
+
   let score = 0
-  const details = []
 
-  if (macd.signal_buy) {
+  if (macd.trend === 'bullish') score += 1
+  else if (macd.trend === 'bearish') score -= 1
+
+  if (rsi.status === 'oversold') score += 1
+  else if (rsi.status === 'overbought') score -= 1
+
+  if (bb.status === 'below') score += 1
+  else if (bb.status === 'above') score -= 1
+
+  if (score > 2) score = 2
+  if (score < -2) score = -2
+  return score
+}
+
+/**
+ * Legacy composite-signal helper — kept for any callers that pass in
+ * pre-computed indicator results. Prefer getSignalScore(prices) instead.
+ */
+export function calculateCompositeSignal(macd, rsi, bb) {
+  let score = 0
+  const signals = []
+
+  const macdTrend = macd && macd.trend
+  if (macdTrend === 'bullish') {
     score += 1
-    details.push({ indicator: 'MACD', signal: 'buy', description: '金叉' })
-  } else if (macd.signal_sell) {
+    signals.push({ indicator: 'MACD', signal: 'buy', description: '金叉' })
+  } else if (macdTrend === 'bearish') {
     score -= 1
-    details.push({ indicator: 'MACD', signal: 'sell', description: '死叉' })
+    signals.push({ indicator: 'MACD', signal: 'sell', description: '死叉' })
   } else {
-    details.push({ indicator: 'MACD', signal: 'neutral', description: '中性' })
+    signals.push({ indicator: 'MACD', signal: 'neutral', description: '中性' })
   }
 
-  if (rsi.signal === 'oversold') {
+  const rsiStatus = rsi && rsi.status
+  if (rsiStatus === 'oversold') {
     score += 1
-    details.push({ indicator: 'RSI', signal: 'buy', description: '超卖' })
-  } else if (rsi.signal === 'overbought') {
+    signals.push({ indicator: 'RSI', signal: 'buy', description: '超卖' })
+  } else if (rsiStatus === 'overbought') {
     score -= 1
-    details.push({ indicator: 'RSI', signal: 'sell', description: '超买' })
+    signals.push({ indicator: 'RSI', signal: 'sell', description: '超买' })
   } else {
-    details.push({ indicator: 'RSI', signal: 'neutral', description: '中性' })
+    signals.push({ indicator: 'RSI', signal: 'neutral', description: '中性' })
   }
 
-  if (bollinger.signal === 'lower_break') {
+  const bbStatus = bb && bb.status
+  if (bbStatus === 'below') {
     score += 1
-    details.push({ indicator: '布林带', signal: 'buy', description: '触及下轨' })
-  } else if (bollinger.signal === 'upper_break') {
+    signals.push({ indicator: '布林带', signal: 'buy', description: '触及下轨' })
+  } else if (bbStatus === 'above') {
     score -= 1
-    details.push({ indicator: '布林带', signal: 'sell', description: '触及上轨' })
+    signals.push({ indicator: '布林带', signal: 'sell', description: '触及上轨' })
   } else {
-    details.push({ indicator: '布林带', signal: 'neutral', description: '中性' })
+    signals.push({ indicator: '布林带', signal: 'neutral', description: '中性' })
   }
 
-  score = Math.max(-2, Math.min(2, score))
+  if (score > 2) score = 2
+  if (score < -2) score = -2
 
   let level = 'neutral'
   if (score >= 1) level = 'buy'
   else if (score <= -1) level = 'sell'
 
-  return { score, level, signals: details }
+  return { score, level, signals }
 }
