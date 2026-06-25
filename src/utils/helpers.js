@@ -1,72 +1,64 @@
-export function formatMoney(value, decimals = 2) {
-  if (value === null || value === undefined || isNaN(value)) return '--'
-  return Number(value).toFixed(decimals)
+/**
+ * src/utils/helpers.js — round-1 baseline
+ */
+
+export function formatPrice(num) {
+  const n = Number(num)
+  if (!Number.isFinite(n)) return '--'
+  const [intPart, decPart = '00'] = n.toFixed(2).split('.')
+  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return `${withCommas}.${decPart}`
 }
 
-export function formatPercent(value, decimals = 2) {
-  if (value === null || value === undefined || isNaN(value)) return '--'
-  const sign = value > 0 ? '+' : ''
-  return `${sign}${Number(value).toFixed(decimals)}%`
+export function formatPercent(num) {
+  const n = Number(num)
+  if (!Number.isFinite(n)) return '--'
+  const sign = n > 0 ? '+' : ''
+  return `${sign}${n.toFixed(2)}%`
 }
 
-export function formatLargeNumber(value) {
-  if (value === null || value === undefined || isNaN(value)) return '--'
-  const abs = Math.abs(value)
-  if (abs >= 1e8) return `${(value / 1e8).toFixed(2)}亿`
-  if (abs >= 1e4) return `${(value / 1e4).toFixed(2)}万`
-  return Number(value).toFixed(2)
+export function formatProfit(num) {
+  const n = Number(num)
+  if (!Number.isFinite(n)) return { text: '--', cls: 'text-flat' }
+  const sign = n > 0 ? '+' : (n < 0 ? '' : '')
+  const cls = n > 0 ? 'text-up' : (n < 0 ? 'text-down' : 'text-flat')
+  return { text: `${sign}${formatPrice(n)}`, cls }
 }
 
-export function formatTime(timestamp) {
-  if (!timestamp) return ''
-  const date = new Date(timestamp)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${month}-${day} ${hours}:${minutes}`
+const MARKET_PATTERNS = [
+  { re: /^SH\d{6}$/i, market: 'A股' },
+  { re: /^SZ\d{6}$/i, market: 'A股' },
+  { re: /^BJ\d{6}$/i, market: 'A股' },
+  { re: /^HK\d{5}$/i, market: '港股' },
+  { re: /^F\d{6}$/i,  market: '基金' },
+  { re: /^\d{6}$/,    market: '基金' } // 6位纯数字默认基金代码
+]
+
+export function getMarketFromSymbol(symbol) {
+  const s = String(symbol || '').trim().toUpperCase()
+  if (!s) return '未知'
+  for (const { re, market } of MARKET_PATTERNS) {
+    if (re.test(s)) return market
+  }
+  // 字母开头(无前缀) → 美股
+  if (/^[A-Z]{1,5}$/.test(s)) return '美股'
+  return '未知'
 }
 
-export function formatDate(timestamp) {
-  if (!timestamp) return ''
-  const date = new Date(timestamp)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+export function isMarketOpen(date = new Date()) {
+  const day = date.getUTCDay() // 0=Sunday, 6=Saturday
+  if (day === 0 || day === 6) return false
+  // A股: 北京 9:30-11:30, 13:00-15:00 = UTC 1:30-3:30, 5:00-7:00
+  const h = date.getUTCHours()
+  const m = date.getUTCMinutes()
+  const t = h * 60 + m
+  const morn = t >= 90 && t <= 210     // 1:30 - 3:30 UTC
+  const aft  = t >= 300 && t <= 420    // 5:00 - 7:00 UTC
+  return morn || aft
 }
 
-export function detectMarket(code) {
-  if (!code) return 'A股'
-  const upper = code.toUpperCase()
-  if (upper.startsWith('HK') || /^\d{5}$/.test(upper)) return '港股'
-  if (upper.endsWith('.US') || /^[A-Z]{1,4}$/.test(upper)) return '美股'
-  return 'A股'
-}
-
-export function detectType(code) {
-  if (!code) return '股票'
-  const upper = code.toUpperCase()
-  const numeric = upper.replace(/^(SH|SZ|HK)/, '')
-  const fundPatterns = /^(16|15|51|58|159|510|511|512|513|514|515|516|517|518|519|520|521|522|523|524|525|526|527|528|588)/
-  if (fundPatterns.test(numeric)) return '基金'
-  return '股票'
-}
-
-export function formatRelativeTime(timestamp) {
-  if (!timestamp) return ''
-  const now = Date.now()
-  const diff = now - (typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp)
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes}分钟前`
-  if (hours < 24) return `${hours}小时前`
-  if (days < 30) return `${days}天前`
-  return formatDate(timestamp)
-}
-
-export function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+export function symbolToDisplayCode(symbol) {
+  const s = String(symbol || '').trim().toUpperCase()
+  if (!s) return ''
+  return s.replace(/^(SH|SZ|BJ|HK|F)/i, '')
 }

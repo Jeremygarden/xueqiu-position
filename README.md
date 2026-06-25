@@ -1,105 +1,100 @@
-# 雪球持仓监控微信小程序
+# 雪球持仓监控（xueqiu-position）
 
-基于 uni-app (Vue 3 + Vite) 构建的微信小程序，用于监控雪球持仓，支持股票和基金，提供技术分析信号、社区精选、丰富持仓数据展示。
+> uni-app Vue 3 微信小程序 — 实时雪球持仓行情、技术分析（MACD/RSI/布林带）、社区精选
 
-## 功能
+[![version](https://img.shields.io/badge/version-2.0.0--alpha-blue)]()
+[![status](https://img.shields.io/badge/status-WIP-orange)]()
 
-### 持仓管理
-- 手动添加/删除持仓标的（股票 + 基金）
-- 支持字段：证券代码、名称、持仓数量、成本价、买入日期
-- 本地存储持仓数据
+## 当前状态
 
-### 持仓数据展示
-- 当前价格、涨跌幅实时刷新
-- 持仓成本、现值、盈亏金额、收益率
-- 持仓总览卡片：总资产、总收益、今日盈亏
-- 多视角分类：按类型/市场/收益排序
+**v2.0.0 全量重构进行中**，采用多轮 Ralph Loop 模式逐文件重写：
 
-### 技术分析信号
-- MACD（12/26/9）：金叉死叉信号
-- RSI（14日）：超买超卖信号
-- 布林带（20日，2σ）：价格突破信号
-- 综合信号评分（-2 到 +2）
+| 轮次 | 内容 | 状态 |
+|------|------|------|
+| 1 | 清理 + 重建脚手架(package/vite/manifest/pages/App/main/uni.scss) | ✅ |
+| 2 | API 层(request.js + xueqiu.js) | ⏳ |
+| 3 | utils(indicators/storage/helpers) | ⏳ |
+| 4 | Pinia store(portfolio) | ⏳ |
+| 5 | settings 页(token 配置) | ⏳ |
+| 6 | add 页(添加持仓) | ⏳ |
+| 7 | index 页(总览) | ⏳ |
+| 8 | detail 页(详情+技术分析) | ⏳ |
+| 9 | components(AssetCard/PositionCard/SignalTag/PostList/EmptyState) | ⏳ |
+| 10 | market 页 + webview 页 + tabBar | ⏳ |
+| 11-18 | bug 修复+细节打磨 | ⏳ |
+| 19-20 | 最终验证 + 文档 | ⏳ |
 
-### 雪球社区精选
-- 每个标的详情页展示最新雪球帖子
-- 显示：帖子标题、作者、点赞数、发布时间
-- 可点击查看原帖（WebView）
+## 项目简介
+
+- **持仓管理** — 添加/查看/删除 A股/港股/美股/基金持仓
+- **实时行情** — 调用雪球非官方 API，定时刷新
+- **技术分析** — MACD/RSI/布林带 三大指标 + 综合信号评分（-2 ~ +2）
+- **社区精选** — 拉取每只标的雪球社区帖子流
 
 ## 技术栈
 
-- **框架**: uni-app（Vue 3 + Vite）
-- **UI**: uView-Plus 组件库
-- **状态管理**: Pinia
-- **数据来源**: 雪球非官方 API（xq_a_token Cookie 认证）
+- [uni-app](https://uniapp.dcloud.net.cn/) Vue 3 + Vite
+- [uview-plus](https://uview-plus.jiangruyi.com/) 3.x 组件库
+- [Pinia](https://pinia.vuejs.org/) 状态管理
+- 雪球非官方接口（需 `xq_a_token` cookie）
 
-## 项目结构
-
-```
-src/
-├── api/           # API 封装
-│   ├── request.js    # HTTP 请求封装
-│   └── xueqiu.js     # 雪球 API 接口
-├── components/   # 公共组件
-│   ├── AssetCard.vue    # 资产总览卡片
-│   ├── PositionCard.vue # 持仓卡片
-│   ├── SignalTag.vue    # 信号标签
-│   └── PostList.vue     # 社区帖子列表
-├── pages/        # 页面
-│   ├── index/     # 持仓总览
-│   ├── detail/    # 标的详情
-│   ├── add/       # 添加持仓
-│   ├── settings/  # 设置
-│   ├── market/    # 市场
-│   └── webview/   # WebView 容器
-├── stores/       # Pinia 状态管理
-│   └── portfolio.js
-├── utils/        # 工具函数
-│   ├── indicators.js # 技术指标计算
-│   ├── storage.js    # 本地存储
-│   └── helpers.js    # 辅助函数
-├── App.vue
-├── main.js
-├── manifest.json
-├── pages.json
-└── uni.scss
-```
-
-## 使用方式
-
-### 开发
+## 安装
 
 ```bash
-# 安装依赖
+git clone https://github.com/Jeremygarden/xueqiu-position.git
+cd xueqiu-position
 npm install
-
-# H5 开发
-npm run dev:h5
-
-# 微信小程序开发
-npm run dev:mp-weixin
 ```
 
-### 构建
+## 运行
 
 ```bash
-# H5 构建
-npm run build:h5
-
-# 微信小程序构建
-npm run build:mp-weixin
+# 微信小程序（推荐）
+npm run dev:mp-weixin
+# H5
+npm run dev:h5
 ```
 
-### 配置 Token
+微信小程序：
+1. 打开微信开发者工具
+2. 导入 `dist/dev/mp-weixin` 目录作为项目
+3. 在 `src/manifest.json` 填入你的 `mp-weixin.appid`
 
-1. 打开 [雪球网](https://xueqiu.com) 并登录
-2. 打开浏览器开发者工具
-3. 从 Cookie 中获取 `xq_a_token` 的值
-4. 在小程序「设置」页面填入 Token 并保存
+## 配置 xq_a_token
 
-## 数据来源
+由于雪球 API 需要登录态，第一次启动后需在「设置」页粘贴 token：
 
-本项目使用雪球非官方公开 API，数据仅供个人学习参考，不构成投资建议。
+1. 浏览器登录 https://xueqiu.com
+2. F12 → Application → Cookies → 复制 `xq_a_token` 的值
+3. 小程序「设置」页粘贴并保存
+
+## 目录结构
+
+```
+xueqiu-position/
+├── src/
+│   ├── api/           # 雪球接口封装
+│   │   ├── request.js
+│   │   └── xueqiu.js
+│   ├── components/    # 通用组件
+│   ├── pages/         # 路由页面（与 pages.json 对应）
+│   │   ├── index/     # 持仓总览
+│   │   ├── detail/    # 标的详情
+│   │   ├── add/       # 添加持仓
+│   │   ├── market/    # 行情
+│   │   ├── settings/  # 设置（token）
+│   │   └── webview/   # 网页容器
+│   ├── stores/        # Pinia store
+│   ├── utils/         # 工具函数（含技术指标）
+│   ├── App.vue
+│   ├── main.js
+│   ├── manifest.json
+│   ├── pages.json
+│   └── uni.scss       # 全局变量
+├── package.json
+├── vite.config.js
+└── README.md
+```
 
 ## License
 

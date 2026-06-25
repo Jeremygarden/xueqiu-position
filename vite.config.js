@@ -6,8 +6,17 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: '@import "uview-plus/theme.scss";'
+        additionalData: '@import "@/uni.scss";'
       }
     }
+  },
+  resolve: {
+    alias: {
+      '@': new URL('./src', import.meta.url).pathname
+    }
+  },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.{js,ts}']
   }
 })

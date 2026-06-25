@@ -1,95 +1,75 @@
-const STORAGE_KEYS = {
-  POSITIONS: 'xq_positions',
-  TOKEN: 'xq_a_token',
-  SETTINGS: 'xq_settings'
+/**
+ * src/utils/storage.js — round-1 baseline
+ * Persists positions + xq_a_token via uni.getStorageSync / setStorageSync.
+ * Falls back to in-memory map outside uni runtime (so vitest works).
+ */
+
+const KEY_POSITIONS = 'xq_positions'
+const KEY_TOKEN = 'xq_a_token'
+
+// Fallback shim for node/vitest
+const _mem = new Map()
+const storage = {
+  get(key) {
+    if (typeof uni !== 'undefined' && uni.getStorageSync) {
+      try { return uni.getStorageSync(key) } catch (_) { return '' }
+    }
+    return _mem.has(key) ? _mem.get(key) : ''
+  },
+  set(key, val) {
+    if (typeof uni !== 'undefined' && uni.setStorageSync) {
+      try { uni.setStorageSync(key, val) } catch (_) { /* noop */ }
+      return
+    }
+    _mem.set(key, val)
+  }
 }
 
-export function getAllPositions() {
+export function getPositions() {
+  const raw = storage.get(KEY_POSITIONS)
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw
   try {
-    const data = uni.getStorageSync(STORAGE_KEYS.POSITIONS)
-    return data ? JSON.parse(data) : []
-  } catch {
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr : []
+  } catch (_) {
     return []
   }
 }
 
-export function savePositions(positions) {
-  try {
-    uni.setStorageSync(STORAGE_KEYS.POSITIONS, JSON.stringify(positions))
-    return true
-  } catch {
-    return false
-  }
+export function savePositions(list) {
+  const arr = Array.isArray(list) ? list : []
+  storage.set(KEY_POSITIONS, JSON.stringify(arr))
 }
 
-export function addPosition(position) {
-  const positions = getAllPositions()
-  const exists = positions.find(p => p.code === position.code)
-  if (exists) return false
-  positions.push({
-    ...position,
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    createdAt: Date.now()
+export function addPosition(pos) {
+  if (!pos || !pos.symbol) return getPositions()
+  const list = getPositions().filter((p) => p.symbol !== pos.symbol)
+  list.push(pos)
+  savePositions(list)
+  return list
+}
+
+export function removePosition(symbol) {
+  const list = getPositions().filter((p) => p.symbol !== symbol)
+  savePositions(list)
+  return list
+}
+
+export function updatePosition(symbol, patch) {
+  const list = getPositions().map((p) => {
+    if (p.symbol === symbol) return { ...p, ...(patch || {}) }
+    return p
   })
-  return savePositions(positions)
-}
-
-export function updatePosition(id, updates) {
-  const positions = getAllPositions()
-  const index = positions.findIndex(p => p.id === id)
-  if (index === -1) return false
-  positions[index] = { ...positions[index], ...updates }
-  return savePositions(positions)
-}
-
-export function deletePosition(id) {
-  const positions = getAllPositions()
-  const filtered = positions.filter(p => p.id !== id)
-  return savePositions(filtered)
-}
-
-export function getPosition(id) {
-  const positions = getAllPositions()
-  return positions.find(p => p.id === id) || null
+  savePositions(list)
+  return list
 }
 
 export function getToken() {
-  try {
-    return uni.getStorageSync(STORAGE_KEYS.TOKEN) || ''
-  } catch {
-    return ''
-  }
+  const t = storage.get(KEY_TOKEN)
+  return typeof t === 'string' ? t : ''
 }
 
 export function setToken(token) {
-  try {
-    uni.setStorageSync(STORAGE_KEYS.TOKEN, token)
-    return true
-  } catch {
-    return false
-  }
+  storage.set(KEY_TOKEN, typeof token === 'string' ? token : '')
 }
-
-export function getSettings() {
-  try {
-    const data = uni.getStorageSync(STORAGE_KEYS.SETTINGS)
-    return data ? JSON.parse(data) : {
-      refreshInterval: 30,
-      darkMode: false,
-      sortBy: 'default'
-    }
-  } catch {
-    return { refreshInterval: 30, darkMode: false, sortBy: 'default' }
-  }
-}
-
-export function saveSettings(settings) {
-  try {
-    uni.setStorageSync(STORAGE_KEYS.SETTINGS, JSON.stringify(settings))
-    return true
-  } catch {
-    return false
-  }
-}
-
-export { STORAGE_KEYS }

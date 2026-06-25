@@ -1,22 +1,20 @@
 {
-  "easycom": {
-    "autoscan": true,
-    "custom": {
-      "^u-(.*)": "uview-plus/components/u-$1/u-$1.vue"
-    }
-  },
   "pages": [
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "持仓总览",
-        "enablePullDownRefresh": true
+        "navigationBarTitleText": "我的持仓",
+        "enablePullDownRefresh": true,
+        "backgroundColor": "#f5f6f8",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
       }
     },
     {
       "path": "pages/detail/detail",
       "style": {
-        "navigationBarTitleText": "标的详情"
+        "navigationBarTitleText": "标的详情",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -26,29 +24,36 @@
       }
     },
     {
+      "path": "pages/market/market",
+      "style": {
+        "navigationBarTitleText": "行情",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
       "path": "pages/settings/settings",
       "style": {
         "navigationBarTitleText": "设置"
       }
     },
     {
-      "path": "pages/market/market",
-      "style": {
-        "navigationBarTitleText": "市场"
-      }
-    },
-    {
       "path": "pages/webview/webview",
       "style": {
-        "navigationBarTitleText": "雪球社区"
+        "navigationBarTitleText": "雪球"
       }
     }
   ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "雪球持仓",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#f5f6f8"
+  },
   "tabBar": {
-    "color": "#7A7E83",
-    "selectedColor": "#3c9cff",
-    "borderStyle": "black",
+    "color": "#666666",
+    "selectedColor": "#1989fa",
     "backgroundColor": "#ffffff",
+    "borderStyle": "black",
     "list": [
       {
         "pagePath": "pages/index/index",
@@ -56,18 +61,12 @@
       },
       {
         "pagePath": "pages/market/market",
-        "text": "市场"
+        "text": "行情"
       },
       {
         "pagePath": "pages/settings/settings",
         "text": "设置"
       }
     ]
-  },
-  "globalStyle": {
-    "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "雪球持仓监控",
-    "navigationBarBackgroundColor": "#F8F8F8",
-    "backgroundColor": "#F8F8F8"
   }
 }

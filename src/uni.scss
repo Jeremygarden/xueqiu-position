@@ -1,63 +1,53 @@
-@import "uview-plus/theme.scss";
+/* =========================================================
+   雪球持仓 v2 — 全局 SCSS 变量
+   通过 vite.config.js 的 additionalData 自动注入到所有页面/组件 *.scss
+   ========================================================= */
 
-$app-color-primary: #3c9cff;
-$app-color-success: #5ac725;
-$app-color-warning: #f9ae3d;
-$app-color-error: #f56c6c;
-$app-color-info: #909399;
+/* 颜色 ---------------------------------------------------- */
+$primary: #1989fa;
+$primary-light: #e6f2ff;
+$primary-dark: #1166c9;
 
-$app-bg-color: #f5f5f5;
-$app-card-bg: #ffffff;
-$app-text-primary: #303133;
-$app-text-regular: #606266;
-$app-text-secondary: #909399;
-$app-border-color: #ebeef5;
+$color-up: #e74c3c;     /* 中国市场红涨 */
+$color-down: #2ecc71;   /* 中国市场绿跌 */
+$color-flat: #909399;
+$color-warning: #f5a623;
+$color-success: #4caf50;
 
-$app-buy-color: #5ac725;
-$app-sell-color: #f56c6c;
-$app-neutral-color: #909399;
+/* 文字 ---------------------------------------------------- */
+$text-primary: #303133;
+$text-secondary: #606266;
+$text-placeholder: #c0c4cc;
+$text-inverse: #ffffff;
 
-page {
-  background-color: $app-bg-color;
-  color: $app-text-primary;
-}
+/* 背景 ---------------------------------------------------- */
+$bg-page: #f5f6f8;
+$bg-card: #ffffff;
+$bg-mask: rgba(0, 0, 0, 0.5);
+$bg-tag: #f0f2f5;
 
-.card {
-  background: $app-card-bg;
-  border-radius: 12rpx;
-  padding: 20rpx;
-  margin: 16rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-}
+/* 边框 ---------------------------------------------------- */
+$border-light: #ebeef5;
+$border-base: #dcdfe6;
+$border-dark: #c0c4cc;
 
-.text-buy {
-  color: $app-buy-color;
-}
+/* 间距 ---------------------------------------------------- */
+$space-xs: 8rpx;
+$space-sm: 16rpx;
+$space-md: 24rpx;
+$space-lg: 32rpx;
+$space-xl: 48rpx;
 
-.text-sell {
-  color: $app-sell-color;
-}
+/* 圆角 ---------------------------------------------------- */
+$radius-sm: 8rpx;
+$radius-md: 16rpx;
+$radius-lg: 24rpx;
+$radius-pill: 999rpx;
 
-.text-neutral {
-  color: $app-neutral-color;
-}
-
-.flex-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-.flex-between {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.flex-center {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-}
+/* 字号 ---------------------------------------------------- */
+$font-xs: 22rpx;
+$font-sm: 26rpx;
+$font-md: 30rpx;
+$font-lg: 34rpx;
+$font-xl: 44rpx;
+$font-xxl: 56rpx;
