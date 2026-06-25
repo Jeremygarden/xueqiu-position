@@ -243,3 +243,78 @@ describe('sort order', () => {
     }
   })
 })
+
+// ── Round 9 additions: error-path E2E + edge cases ───────────────────────────
+
+describe('场景6: API 失败时持仓列表仍可渲染', () => {
+  it('positions remain after refreshPrices fails', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    vi.clearAllMocks()
+    fetchBatchQuote.mockRejectedValue(new Error('network error'))
+    await store.refreshPrices()
+    // positions still present, just without live price
+    expect(store.positions).toHaveLength(1)
+    expect(store.positions[0].symbol).toBe('SH600519')
+  })
+
+  it('totalCost is unaffected by API failure', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    const costBefore = store.totalCost
+    vi.clearAllMocks()
+    fetchBatchQuote.mockRejectedValue(new Error('fail'))
+    await store.refreshPrices()
+    expect(store.totalCost).toBe(costBefore)
+  })
+
+  it('loading is false after API failure', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    vi.clearAllMocks()
+    fetchBatchQuote.mockRejectedValue(new Error('timeout'))
+    await store.refreshPrices()
+    expect(store.loading).toBe(false)
+  })
+})
+
+describe('场景7: 零成本 / 零份额边界', () => {
+  it('position with 0 shares has 0 marketValue', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 0, costPrice: 1400 })
+    expect(store.positions[0].marketValue).toBe(0)
+  })
+
+  it('totalProfitRate is 0 when costPrice is 0', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 0 })
+    expect(store.totalProfitRate).toBe(0)
+  })
+
+  it('position with 0 costPrice has 0 profit calculation base', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 0 })
+    expect(store.totalCost).toBe(0)
+  })
+})
+
+describe('场景8: 多次重复刷新不产生重复持仓', () => {
+  it('calling addPosition twice for same symbol leaves 1 position', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    await store.addPosition({ symbol: 'SH600519', shares: 20, costPrice: 1350 })
+    expect(store.positions.filter(p => p.symbol === 'SH600519')).toHaveLength(1)
+    expect(store.positions[0].shares).toBe(20)
+  })
+
+  it('refreshPrices called twice updates lastRefresh each time', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    await store.refreshPrices()
+    const t1 = store.lastRefresh
+    await new Promise(r => setTimeout(r, 2))
+    await store.refreshPrices()
+    const t2 = store.lastRefresh
+    expect(t2).toBeGreaterThan(t1)
+  })
+})
