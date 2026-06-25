@@ -65,6 +65,10 @@ export function calculateMACD(prices, fast = 12, slow = 26, signal = 9) {
   if (p.length === 0) {
     return { macd: 0, signal: 0, histogram: 0, trend: 'neutral', crossover: null }
   }
+  // 不足以同时计算 fast/slow/signal 的窗口时，给中性回退（避免 EMA 早期数据噪声）
+  if (p.length < slow + signal) {
+    return { macd: 0, signal: 0, histogram: 0, trend: 'neutral', crossover: null }
+  }
   const emaFast = _ema(p, fast)
   const emaSlow = _ema(p, slow)
   const difArr = emaFast.map((v, i) => v - emaSlow[i])
@@ -110,7 +114,8 @@ export function calculateRSI(prices, period = 14) {
   }
 
   let value
-  if (avgLoss === 0) value = 100
+  if (avgGain === 0 && avgLoss === 0) value = 50   // flat series → undefined RSI, treat as neutral
+  else if (avgLoss === 0) value = 100
   else {
     const rs = avgGain / avgLoss
     value = 100 - 100 / (1 + rs)

@@ -85,7 +85,14 @@ npm run build:h5
 
 ## 测试
 
-技术指标是纯函数，可以直接用 Node 单测：
+项目自带 Vitest 单测套件覆盖 `utils/`（indicators / helpers / storage）。
+
+```bash
+npm test           # vitest run --config vitest.config.js
+npm run test:watch # 监听模式
+```
+
+如果只想快速验证技术指标，也可以直接用 Node：
 
 ```bash
 node --input-type=module << 'EOF'

@@ -9,8 +9,8 @@
     "build:mp-weixin": "uni build -p mp-weixin",
     "dev:h5": "uni -p h5",
     "build:h5": "uni build -p h5",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run --config vitest.config.js",
+    "test:watch": "vitest --config vitest.config.js"
   },
   "dependencies": {
     "@dcloudio/uni-app": "vue3",
