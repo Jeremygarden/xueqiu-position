@@ -329,3 +329,59 @@ describe('loadPositions', () => {
     expect(store.positions[0].symbol).toBe('SH600519')
   })
 })
+
+// ── Round 8 additions: edge cases for store persistence + updatePosition ─────
+
+describe('updatePosition via store', () => {
+  it('updates notes on existing position', async () => {
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    store.updatePosition('SH600519', { notes: '关注中' })
+    const pos = store.positions.find(p => p.symbol === 'SH600519')
+    expect(pos.notes).toBe('关注中')
+  })
+
+  it('does not add phantom position for unknown symbol', () => {
+    const store = usePortfolioStore()
+    store.updatePosition('GHOST', { shares: 999 })
+    expect(store.positions).toHaveLength(0)
+  })
+})
+
+describe('sortBy = profitRate', () => {
+  it('sorts by profitRate descending', async () => {
+    fetchBatchQuote.mockResolvedValue([
+      { symbol: 'SH600519', current: 1600, percent: 2 },    // profitRate high
+      { symbol: 'HK00700', current: 300, percent: -5 }      // profitRate low
+    ])
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    await store.addPosition({ symbol: 'HK00700', shares: 100, costPrice: 350 })
+    await store.refreshPrices()
+    store.sortBy = 'profitRate'
+    const list = store.filteredPositions
+    expect(list[0].profitRate).toBeGreaterThanOrEqual(list[list.length - 1].profitRate)
+  })
+})
+
+describe('todayProfit calculation', () => {
+  it('is positive when all positions have positive percent', async () => {
+    fetchBatchQuote.mockResolvedValue([
+      { symbol: 'SH600519', current: 1500, percent: 2, lastClose: 1470 }
+    ])
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1400 })
+    await store.refreshPrices()
+    expect(store.todayProfit).toBeGreaterThan(0)
+  })
+
+  it('is negative when positions have negative percent', async () => {
+    fetchBatchQuote.mockResolvedValue([
+      { symbol: 'SH600519', current: 1400, percent: -3, lastClose: 1443 }
+    ])
+    const store = usePortfolioStore()
+    await store.addPosition({ symbol: 'SH600519', shares: 10, costPrice: 1450 })
+    await store.refreshPrices()
+    expect(store.todayProfit).toBeLessThan(0)
+  })
+})
