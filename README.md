@@ -146,6 +146,10 @@ xueqiu-position/
 └── README.md
 ```
 
+## 变更记录
+
+详见 [CHANGELOG.md](./CHANGELOG.md)。
+
 ## License
 
 MIT
