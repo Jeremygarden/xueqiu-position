@@ -244,3 +244,42 @@ describe('multi-operation persistence', () => {
     expect(loaded[0].meta.tags).toEqual(['a', 'b'])
   })
 })
+
+// ── Round 13: storage shim error-path + edge coverage ──────────────────────
+
+describe('storage with getStorageSync throwing', () => {
+  it('returns empty string when getStorageSync throws', () => {
+    uni.getStorageSync.mockImplementationOnce(() => { throw new Error('storage error') })
+    expect(getToken()).toBe('')
+  })
+
+  it('returns [] when getStorageSync throws on positions key', () => {
+    uni.getStorageSync.mockImplementationOnce(() => { throw new Error('quota exceeded') })
+    expect(getPositions()).toEqual([])
+  })
+})
+
+describe('storage with setStorageSync throwing', () => {
+  it('does not throw when setStorageSync throws', () => {
+    uni.setStorageSync.mockImplementationOnce(() => { throw new Error('write error') })
+    expect(() => setToken('safe')).not.toThrow()
+  })
+
+  it('does not throw when savePositions triggers setStorageSync error', () => {
+    uni.setStorageSync.mockImplementationOnce(() => { throw new Error('quota') })
+    expect(() => savePositions([{ symbol: 'SH600519' }])).not.toThrow()
+  })
+})
+
+describe('storage type coercion', () => {
+  it('getPositions handles number stored (non-array non-string)', () => {
+    // If uni.getStorageSync returns a number somehow
+    uni.getStorageSync.mockReturnValueOnce(42)
+    expect(getPositions()).toEqual([])
+  })
+
+  it('setToken with boolean becomes empty string', () => {
+    setToken(true)
+    expect(getToken()).toBe('')
+  })
+})
