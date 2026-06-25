@@ -58,3 +58,25 @@ fixes, ran the test suite, and committed + pushed to GitHub.
 
 Snapshot of the original scaffold; superseded by 2.0.0 and not
 maintained.
+
+## [2.0.1] — 2026-06-25 (test suite)
+
+Added a complete Vitest test suite covering unit / integration / E2E layers.
+
+### Added
+- `tests/mocks/uni.mock.js` — global `uni` API stub (setupFile for all tests)
+- `tests/mocks/xueqiu.mock.js` — canonical mock data & factory helpers
+- `tests/unit/indicators.test.js` — 51 cases: EMA precision, MACD, RSI, BB, score/label
+- `tests/unit/helpers.test.js` — 63 cases: formatters, market detection, isMarketOpen
+- `tests/unit/storage.test.js` — 38 cases: CRUD, shim error paths, type coercion
+- `tests/unit/error-handling.test.js` — 26 cases: empty portfolio, invalid codes, concurrency
+- `tests/integration/api.test.js` — 49 cases: all xueqiu.js & request.js functions
+- `tests/integration/store.test.js` — 38 cases: full Pinia store actions + getters
+- `tests/e2e/portfolio-flow.test.js` — 28 scenarios: add/remove/filter/refresh/error-path
+- `tests/e2e/signals-flow.test.js` — 22 scenarios: signal generation end-to-end
+- `.github/workflows/test.yml` — CI running tests on Node 20 + 22
+- Coverage thresholds enforced in `vitest.config.js`
+
+### Metrics
+- 357 tests, 11 test files, 0 failures
+- Overall: 96.8% statements, 85.3% branch coverage

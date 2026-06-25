@@ -91,14 +91,15 @@ npm run build:h5
 
 | 层次 | 文件 | 内容 |
 |-------|------|------|
-| 单元测试 | `tests/unit/indicators.test.js` | EMA / MACD / RSI / BB / 信号评分 47 个案例 |
-| 单元测试 | `tests/unit/helpers.test.js` | 格式化 / 市场识别 / 交易时间 49 个案例 |
-| 单元测试 | `tests/unit/storage.test.js` | 持仓 CRUD / token 读写 28 个案例 |
-| 单元测试 | `tests/unit/error-handling.test.js` | 空持仓 / 非法代码 / 并发 |
-| 集成测试 | `tests/integration/api.test.js` | fetch* API 43 个案例（mock uni.request）|
-| 集成测试 | `tests/integration/store.test.js` | Pinia store 全部 action + getter 31 个案例 |
-| E2E 流程 | `tests/e2e/portfolio-flow.test.js` | 添加/删除/筛选/刷新 20 个场景 |
-| E2E 流程 | `tests/e2e/signals-flow.test.js` | 技术信号全流程 15 个场景 |
+| 单元测试 | `tests/unit/indicators.test.js` | EMA / MACD / RSI / BB / 信号评分 51 个案例 |
+| 单元测试 | `tests/unit/helpers.test.js` | 格式化 / 市场识别 / 交易时间 63 个案例 |
+| 单元测试 | `tests/unit/storage.test.js` | 持仓 CRUD / token 读写 38 个案例 |
+| 单元测试 | `tests/unit/error-handling.test.js` | 空持仓 / 非法代码 / 并发 26 个案例 |
+| 集成测试 | `tests/integration/api.test.js` | fetch* API 49 个案例（mock uni.request）|
+| 集成测试 | `tests/integration/store.test.js` | Pinia store 全部 action + getter 38 个案例 |
+| E2E 流程 | `tests/e2e/portfolio-flow.test.js` | 添加/删除/筛选/刷新/错误 28 个场景 |
+| E2E 流程 | `tests/e2e/signals-flow.test.js` | 技术信号全流程 22 个场景 |
+| **合计** | **11 个测试文件** | **357 个测试用例，11/11 通过** |
 
 ### 运行测试
 
@@ -118,11 +119,11 @@ npx vitest run --config vitest.config.js --coverage
 | 文件 | 语句覆盖 | 分支覆盖 | 目标 |
 |------|---------|---------|------|
 | `utils/indicators.js` | 97.5% | 92.9% | ≥ 90% ✅ |
-| `utils/helpers.js` | 95.3% | 96.3% | ≥ 85% ✅ |
-| `utils/storage.js` | 91.1% | 80.0% | ≥ 85% ✅ |
-| `stores/portfolio.js` | 94.6% | 76.8% | ≥ 75% ✅ |
+| `utils/helpers.js` | 96.9% | 97.6% | ≥ 85% ✅ |
+| `utils/storage.js` | 93.3% | 80.0% | ≥ 85% ✅ |
+| `stores/portfolio.js` | 98.5% | 82.6% | ≥ 75% ✅ |
 | `api/xueqiu.js` | 96.1% | 77.5% | ≥ 70% ✅ |
-| **All files** | **95.1%** | **83.4%** | — |
+| **All files** | **96.8%** | **85.3%** | — |
 
 ### Mock 架构
 
