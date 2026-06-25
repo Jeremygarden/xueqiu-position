@@ -60,6 +60,9 @@ function _resolveUrl(baseUrl, url) {
 
 function _buildHeader(custom) {
   const token = getToken()
+  // NOTE: 微信小程序内置请求会丢弃自定义 Cookie 字段（白名单限制），
+  // 此处主要服务 h5 / app 平台；mp-weixin 上请求会带不上 token，
+  // 由 settings 页提示用户在「设置」中配置时给出说明。
   const cookie = token ? `xq_a_token=${token};u=${Date.now()}` : ''
   return {
     'Content-Type': 'application/json',

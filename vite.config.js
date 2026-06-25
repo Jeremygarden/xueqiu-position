@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import { fileURLToPath, URL } from 'node:url'
 import uni from '@dcloudio/vite-plugin-uni'
 
 export default defineConfig({
@@ -12,7 +13,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': new URL('./src', import.meta.url).pathname
+      '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
   test: {
