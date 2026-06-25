@@ -85,14 +85,60 @@ npm run build:h5
 
 ## 测试
 
-项目自带 Vitest 单测套件覆盖 `utils/`（indicators / helpers / storage）。
+### 概览
+
+项目配备完整的 **Vitest** 测试套件，覆盖三个层次：
+
+| 层次 | 文件 | 内容 |
+|-------|------|------|
+| 单元测试 | `tests/unit/indicators.test.js` | EMA / MACD / RSI / BB / 信号评分 47 个案例 |
+| 单元测试 | `tests/unit/helpers.test.js` | 格式化 / 市场识别 / 交易时间 49 个案例 |
+| 单元测试 | `tests/unit/storage.test.js` | 持仓 CRUD / token 读写 28 个案例 |
+| 单元测试 | `tests/unit/error-handling.test.js` | 空持仓 / 非法代码 / 并发 |
+| 集成测试 | `tests/integration/api.test.js` | fetch* API 43 个案例（mock uni.request）|
+| 集成测试 | `tests/integration/store.test.js` | Pinia store 全部 action + getter 31 个案例 |
+| E2E 流程 | `tests/e2e/portfolio-flow.test.js` | 添加/删除/筛选/刷新 20 个场景 |
+| E2E 流程 | `tests/e2e/signals-flow.test.js` | 技术信号全流程 15 个场景 |
+
+### 运行测试
 
 ```bash
-npm test           # vitest run --config vitest.config.js
-npm run test:watch # 监听模式
+# 运行所有测试（305+ 个案例）
+npm test
+
+# 监听模式（开发时使用）
+npm run test:watch
+
+# 生成覆盖率报告到 coverage/
+npx vitest run --config vitest.config.js --coverage
 ```
 
-如果只想快速验证技术指标，也可以直接用 Node：
+### 覆盖率（当前实测）
+
+| 文件 | 语句覆盖 | 分支覆盖 | 目标 |
+|------|---------|---------|------|
+| `utils/indicators.js` | 97.5% | 92.9% | ≥ 90% ✅ |
+| `utils/helpers.js` | 95.3% | 96.3% | ≥ 85% ✅ |
+| `utils/storage.js` | 91.1% | 80.0% | ≥ 85% ✅ |
+| `stores/portfolio.js` | 94.6% | 76.8% | ≥ 75% ✅ |
+| `api/xueqiu.js` | 96.1% | 77.5% | ≥ 70% ✅ |
+| **All files** | **95.1%** | **83.4%** | — |
+
+### Mock 架构
+
+```
+tests/
+  mocks/
+    uni.mock.js      # globalThis.uni 全量 stub（setupFile）
+    xueqiu.mock.js   # 标准化 mock 数据工厂
+  unit/              # 纯函数单元测试
+  integration/       # 带 Pinia + mock uni.request 的集成测试
+  e2e/               # 完整用户流程仿真
+```
+
+注：`vitest.config.js` 与 `vite.config.js` 分离，单元测试不加载 uni-app Vite 插件，减少引导开销。
+
+### 快速验证技术指标（无需安装依赖）
 
 ```bash
 node --input-type=module << 'EOF'

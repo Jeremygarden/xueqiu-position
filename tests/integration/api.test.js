@@ -314,3 +314,113 @@ describe('searchStocks', () => {
     expect(await searchStocks('茅台')).toEqual([])
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Extra branch coverage for xueqiu.js fallback paths
+// ─────────────────────────────────────────────────────────────────────────────
+describe('fetchTimeline — field fallback branches', () => {
+  it('uses status_id when id is missing', async () => {
+    const raw = {
+      statuses: [
+        { status_id: '999', text: '文章内容', user: { name: '作者' }, like_count: 5,
+          created_at: 1700000000, target: null }
+      ]
+    }
+    mockUniRequest({ data: raw })
+    const posts = await fetchTimeline('SH600519')
+    expect(posts[0].id).toBe('999')
+  })
+
+  it('constructs url from id when target missing', async () => {
+    const raw = {
+      statuses: [
+        { id: '777', text: '文章', user: { screen_name: '投资者' }, like_count: 1,
+          created_at: 1700000000, target: null }
+      ]
+    }
+    mockUniRequest({ data: raw })
+    const posts = await fetchTimeline('SH600519')
+    expect(posts[0].url).toContain('777')
+  })
+
+  it('falls back to 匿名 when user is null', async () => {
+    const raw = {
+      statuses: [{ id: '1', text: 'hi', user: null, like_count: 0, created_at: 0 }]
+    }
+    mockUniRequest({ data: raw })
+    const posts = await fetchTimeline('SH600519')
+    expect(posts[0].author).toBe('匿名')
+  })
+
+  it('accepts data.list when data.statuses absent', async () => {
+    const raw = {
+      list: [{ id: '42', title: '帖子', text: '内容', user: { screen_name: 'X' }, like_count: 0, created_at: 0 }]
+    }
+    mockUniRequest({ data: raw })
+    const posts = await fetchTimeline('SH600519')
+    expect(posts).toHaveLength(1)
+  })
+})
+
+describe('searchStocks — field fallback branches', () => {
+  it('uses item.symbol when item.code absent', async () => {
+    const raw = [{ symbol: 'SH600519', query: '茅台' }]
+    mockUniRequest({ data: raw })
+    const list = await searchStocks('茅台')
+    expect(list[0].symbol).toBe('SH600519')
+  })
+
+  it('uses item.name when item.query absent', async () => {
+    const raw = [{ code: 'HK00700', name: '腾讯' }]
+    mockUniRequest({ data: raw })
+    const list = await searchStocks('腾讯')
+    expect(list[0].name).toBe('腾讯')
+  })
+
+  it('filters out items with no resolved symbol', async () => {
+    const raw = [{ code: '', query: '' }, { code: 'SH600519', query: '茅台' }]
+    mockUniRequest({ data: raw })
+    const list = await searchStocks('茅台')
+    expect(list).toHaveLength(1)
+  })
+
+  it('accepts data.list response shape', async () => {
+    mockUniRequest({ data: { list: [{ code: 'SH600519', query: '茅台' }] } })
+    const list = await searchStocks('茅台')
+    expect(list[0].symbol).toBe('SH600519')
+  })
+})
+
+describe('fetchQuote — items[0] path', () => {
+  it('parses quote from items[0].quote structure', async () => {
+    const raw = {
+      items: [{
+        quote: {
+          symbol: 'SH600519', name: '贵州茅台', current: 1500, percent: 1.2,
+          chg: 17.8, high: 1520, low: 1490, open: 1495, last_close: 1482.2,
+          volume: 1234567, market_capital: 1890000000000
+        }
+      }]
+    }
+    mockUniRequest({ data: raw })
+    const q = await fetchQuote('SH600519')
+    expect(q).not.toBeNull()
+    expect(q.current).toBe(1500)
+  })
+})
+
+describe('fetchKline — alternative period aliases', () => {
+  it('accepts week period alias', async () => {
+    mockUniRequest({ data: { column: ['timestamp', 'close', 'volume'], item: [] } })
+    await fetchKline('SH600519', '1w', 30)
+    const callArg = uni.request.mock.calls[0][0]
+    expect(callArg.data.period).toBe('week')
+  })
+
+  it('falls back to day for unknown period', async () => {
+    mockUniRequest({ data: { column: ['timestamp', 'close', 'volume'], item: [] } })
+    await fetchKline('SH600519', 'unknown_period', 10)
+    const callArg = uni.request.mock.calls[0][0]
+    expect(callArg.data.period).toBe('day')
+  })
+})
